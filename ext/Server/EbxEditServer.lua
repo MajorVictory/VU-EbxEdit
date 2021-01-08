@@ -192,11 +192,8 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 	if (valueType == 'number') then
 		workingInstance[propertyName] = tonumber(newValue)
 
-	elseif (valueType == 'string') then
+	elseif (valueType == 'string' or valueType == 'boolean') then
 		workingInstance[propertyName] = newValue
-
-	elseif (valueType == 'boolean') then
-		workingInstance[propertyName] = (newValue == 'true')
 
 	elseif (valueType == 'nil') then
 		workingInstance[propertyName] = nil

@@ -128,7 +128,7 @@ function EbxEditUtils:ValidateValue(argValue, argParams)
 
 				-- the value still needs to be a string, but let's normalise it
 				local booltostring = tostring((argValue == '1' or string.lower(argValue) == 'true' or string.lower(argValue) == 'y'))
-				return booltostring, true
+				return (booltostring == 'true'), true
 			end
 		end
 

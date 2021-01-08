@@ -58,11 +58,8 @@ function EbxEditClient:onClientSetValue(args)
 	if (args.Type == 'number') then
 		workingInstance[propertyName] = tonumber(args.Value)
 
-	elseif (args.Type == 'string') then
+	elseif (args.Type == 'string' or valueType == 'boolean') then
 		workingInstance[propertyName] = args.Value
-
-	elseif (valueType == 'boolean') then
-		workingInstance[propertyName] = (args.Value == 'true')
 
 	elseif (args.Type == 'nil') then
 		workingInstance[propertyName] = nil
