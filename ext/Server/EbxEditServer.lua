@@ -1,7 +1,7 @@
 class 'EbxEditServer'
 
 function EbxEditServer:__init()
-    print("EbxEditServer Loading...")
+    SharedUtils:Print("EbxEditServer Loading...")
 
     -- change this to whitelist certain users who can WRITE values
 	self.userCanWrite = {
@@ -116,9 +116,6 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 	elseif (valueType == 'nil') then
 		command = 'vu-ebxedit.SetNil'
 	end
-
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*"..command.."* ["..ebxEditUtils:getModuleState().."]"})
-	SharedUtils:Print("*"..command.."* ["..ebxEditUtils:getModuleState().."]")
 
 	if (not self:CheckUser(player, 'Write')) then
 		return

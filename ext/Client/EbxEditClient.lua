@@ -1,7 +1,7 @@
 class 'EbxEditClient'
 
 function EbxEditClient:__init()
-    print("EbxEditClient Loading...")
+    SharedUtils:Print("EbxEditClient Loading...")
     self:RegisterConsoleCommands()
     self:RegisterEvents()
 end
