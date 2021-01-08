@@ -1,0 +1,11 @@
+{
+    "Name": "Ebx Edit",
+    "Description": "Allows real-time editing of Ebx values from the console",
+    "Version": "1.0.0",
+    "Authors": [ "MajorVictory87" ],
+    "HasVeniceEXT": true,
+    "Dependencies": {
+        "veniceext": "^1.0.0"
+    },
+    "Tags": []
+}
