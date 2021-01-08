@@ -14,7 +14,7 @@ function EbxEditClient:RegisterConsoleCommands()
 end
 
 function EbxEditClient:RegisterEvents()
-	NetEvents:Subscribe('EbxEdit:ClientSetNumber', self, self.onClientSetNumber)
+	NetEvents:Subscribe('EbxEdit:ClientSetValue', self, self.onClientSetValue)
 	NetEvents:Subscribe('EbxEdit:ServerMessage', self, self.onServerMessage)
 end
 
@@ -38,7 +38,7 @@ function EbxEditClient:onServerMessage(args)
 	SharedUtils:Print(args.Message)
 end
 
-function EbxEditClient:onClientSetNumber(args)
+function EbxEditClient:onClientSetValue(args)
 
 	SharedUtils:Print('args: '..ebxEditUtils:dump(args))
 
@@ -48,14 +48,20 @@ function EbxEditClient:onClientSetNumber(args)
 	-- all validated, everything should be usable now
 	workingInstance, propertyName, valid = ebxEditUtils:GetWritableProperty(resource, args.Path)
 
-	if (property == nil or status ~= true) then
-		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-			["Message"] = "**Argument 2 `PropertyNamePath` Invalid at segment**: "..status
-		})
+	if (not valid) then
+		SharedUtils:Print('**Argument 2 `PropertyNamePath` Invalid at segment**: '..tostring(status))
 		return
 	end
 
-	workingInstance[propertyName] = tonumber(args.Value)
+	if (args.Type == 'number') then
+		workingInstance[propertyName] = tonumber(args.Value)
+
+	elseif (args.Type == 'string') then
+		workingInstance[propertyName] = args.Value
+
+	elseif (args.Type == 'nil') then
+		workingInstance[propertyName] = nil
+	end
 
 end
 

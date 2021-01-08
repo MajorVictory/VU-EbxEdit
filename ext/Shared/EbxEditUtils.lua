@@ -42,15 +42,33 @@ end
 -- <workingInstance>: the found instance as a typed object and made writable
 -- <propertyName>: the property name that works
 -- <valid>: the given values were valid
-function EbxEditUtils:GetWritableProperty(workingInstance, propertyPath)
+function EbxEditUtils:GetWritableProperty(instance, propertyPath)
 	local propertyName
+	local workingInstance = instance
 	for i=1, #propertyPath do
+
 		workingInstance, propertyName, valid = self:CheckInstancePropertyExists(workingInstance, propertyPath[i])
 		if (not valid) then
 			return workingInstance, propertyName, valid
+		else 
+
+			-- we've reached a value
+			if (type(workingInstance[propertyName]) == 'string' or
+				type(workingInstance[propertyName]) == 'number' or
+				type(workingInstance[propertyName]) == 'boolean' or
+				type(workingInstance[propertyName]) == 'nil') then
+
+				if (workingInstance.MakeWritable ~= nil) then
+					workingInstance:MakeWritable()
+				end
+
+				return workingInstance, propertyName, true
+			end
+
+			workingInstance = workingInstance[propertyName]
 		end
 	end
-	return workingInstance, propertyName, valid
+	return workingInstance, propertyName, false
 end
 
 function EbxEditUtils:CheckInstancePropertyExists(instance, propertyName)
@@ -69,11 +87,13 @@ function EbxEditUtils:CheckInstancePropertyExists(instance, propertyName)
 	end
 
 	local instanceType = instance.typeInfo.name -- get type
+	SharedUtils:Print('Casting to type: '..instanceType)
 	local workingInstance = _G[instanceType](instance) -- cast to type
 
 	if (workingInstance[propertyName] ~= nil) then -- try for property again
 		return workingInstance, propertyName, true
 	end
+	SharedUtils:Print('cast named index failed...')
 
 	if (tonumber(propertyName) ~= nil) then -- still no, lets try array on the cast
 		if (workingInstance[tonumber(propertyName)] ~= nil) then -- try for property again
@@ -165,6 +185,7 @@ function EbxEditUtils:StringSplit(value, seperator)
 	return result
 end
 
+-- Adapted from the C# implementation used by VU provided by NoFaTe
 function EbxEditUtils:FormatMemberName(memberName)
 	local outputName = ''
 	local foundLower = false

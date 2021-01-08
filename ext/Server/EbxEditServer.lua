@@ -41,7 +41,7 @@ function EbxEditServer:onGetValue(player, args)
 		})
 		return
 	end
-	local resource, propertyPath, property, newValue, status
+	local resource, propertyPath, newValue, status
 
 	resource, status = ebxEditUtils:GetWritableInstance(args[1])
 	if (status ~= true) then
@@ -69,29 +69,56 @@ function EbxEditServer:onGetValue(player, args)
 		return
 	end
 
-	SharedUtils:Print(ebxEditUtils:dump(workingInstance))
-	SharedUtils:Print(ebxEditUtils:dump(propertyName))
-	SharedUtils:Print(ebxEditUtils:dump(workingInstance[propertyName]))
 	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
 		["Message"] = ebxEditUtils:dump(workingInstance[propertyName])
 	})
 end
 
-function EbxEditServer:onSetNumber(player, args)
 
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*onSetNumber* ["..ebxEditUtils:getModuleState().."]"})
-	SharedUtils:Print("*onSetNumber* ["..ebxEditUtils:getModuleState().."]")
+function EbxEditServer:onSetNumber(player, args)
+	self:serverSetValue(player, args, 'number')
+end
+
+function EbxEditServer:onSetString(player, args)
+	self:serverSetValue(player, args, 'string')
+end
+
+function EbxEditServer:onSetNil(player, args)
+	self:serverSetValue(player, args, 'nil')
+end
+
+function EbxEditServer:serverSetValue(player, args, valueType)
+
+	local command = ''
+	if (valueType == 'number') then
+		command = 'vu-ebxedit.SetNumber'
+
+	elseif (valueType == 'string') then
+		command = 'vu-ebxedit.SetString'
+
+	elseif (valueType == 'nil') then
+		command = 'vu-ebxedit.SetNil'
+	end
+
+	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*"..command.."* ["..ebxEditUtils:getModuleState().."]"})
+	SharedUtils:Print("*"..command.."* ["..ebxEditUtils:getModuleState().."]")
 	if (not self:CheckUser(player)) then
 		return
 	end
 
 	if (#args < 3) then
-		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-			["Message"] = "Usage: `vu-ebxedit.SetNumber` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**number**>"
-		})
+		if (valueType == 'nil') then
+			NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
+				["Message"] = "Usage: `"..command.."` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**>"
+			})
+		else
+			NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
+				["Message"] = "Usage: `"..command.."` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**number**>"
+			})
+		end
 		return
 	end
-	local resource, propertyPath, property, newValue, status
+	local resource, propertyPath, newValue, status
 
 	resource, status = ebxEditUtils:GetWritableInstance(args[1])
 	if (status ~= true) then
@@ -109,12 +136,28 @@ function EbxEditServer:onSetNumber(player, args)
 		return
 	end
 
-	newValue, status = ebxEditUtils:ValidateValue(args[3], {["Type"] = 'number'})
-	if (status ~= true) then
-		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-			["Message"] = "**Argument 3 `NewValue` Invalid**: "..status
-		})
-		return
+	if (valueType ~= 'nil') then
+
+		local argValue = args[3]
+
+		-- if string, grab extra arguments and reconstitute
+		if (valueType == 'string') then
+			argValue = ''
+			for i=3, #args do
+				if (argValue:len() > 0) then
+					argValue = argValue..' '
+				end
+				argValue = argValue..args[i]
+			end
+		end
+
+		newValue, status = ebxEditUtils:ValidateValue(argValue, {["Type"] = valueType})
+		if (status ~= true) then
+			NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
+				["Message"] = "**Argument 3 `NewValue` Invalid**: "..status
+			})
+			return
+		end
 	end
 
 	-- all validated, everything should be usable now
@@ -133,59 +176,13 @@ function EbxEditServer:onSetNumber(player, args)
 		["Message"] = "*Success*: "..tostring(propertyName)..' | '..tostring(workingInstance[propertyName])
 	})
 	-- tell everyone to set this on their client
-	NetEvents:BroadcastLocal('EbxEdit:ClientSetNumber', {
+	NetEvents:BroadcastLocal('EbxEdit:ClientSetValue', {
 		["Instance"] = args[1],
 		["Path"] = propertyPath,
+		["Type"] = valueType,
 		["Value"] = newValue
 	})
 
 end
-
-function EbxEditServer:onSetString(player, args)
-
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*onSetString*"})
-	if (not self:CheckUser(player)) then
-		return
-	end
-
-	if (#args < 3) then
-		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-			["Message"] = "Usage: `vu-ebxedit.SetNumber` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**string**>"
-		})
-		return false
-	end
-
-	local resourcePath = args[1]
-	local propertyPath = args[2]
-
-	local concatvalue = ''
-	for i=3, #args do
-		if (string.len(concatvalue) > 0) then
-			concatvalue = concatvalue..' '
-		end
-		concatvalue = concatvalue..args[i]
-	end
-
-	local newValue, status = EbxEditUtils:ValidateValue(args[3], {})
-
-end
-
-
-function EbxEditServer:onSetNil(player, args)
-
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*onSetNil*"})
-	if (not self:CheckUser(player)) then
-		return
-	end
-
-	if (#args < 2) then
-		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-			["Message"] = "Usage: `vu-ebxedit.SetNumber` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**>"
-		})
-		return false
-	end
-
-end
-
 
 return EbxEditServer()
