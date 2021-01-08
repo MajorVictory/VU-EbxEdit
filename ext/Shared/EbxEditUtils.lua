@@ -87,13 +87,11 @@ function EbxEditUtils:CheckInstancePropertyExists(instance, propertyName)
 	end
 
 	local instanceType = instance.typeInfo.name -- get type
-	SharedUtils:Print('Casting to type: '..instanceType)
 	local workingInstance = _G[instanceType](instance) -- cast to type
 
 	if (workingInstance[propertyName] ~= nil) then -- try for property again
 		return workingInstance, propertyName, true
 	end
-	SharedUtils:Print('cast named index failed...')
 
 	if (tonumber(propertyName) ~= nil) then -- still no, lets try array on the cast
 		if (workingInstance[tonumber(propertyName)] ~= nil) then -- try for property again
@@ -162,11 +160,9 @@ function EbxEditUtils:ValidateValue(argValue, argParams)
 end
 
 function EbxEditUtils:GetValidPath(propertyPath)
-	print('GetValidPath - Before: '..tostring(propertyPath))
 
 	local pathPieces = self:StringSplit(propertyPath, '\\.')
 	local result = {}
-	print('GetValidPath - pathPieces: '..ebxEditUtils:dump(pathPieces))
 
 	for piece=1, #pathPieces do
 		result[#result+1] = self:FormatMemberName(pathPieces[piece])

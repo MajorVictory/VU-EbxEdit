@@ -3,10 +3,16 @@ class 'EbxEditServer'
 function EbxEditServer:__init()
     print("EbxEditServer Loading...")
 
-	self.allowedUsernames = {
+    -- change this to whitelist certain users who can WRITE values
+	self.userCanWrite = {
 		'MajorVictory87',
 		--'MinorVictory',
 		--'MinorFailure'
+	}
+
+	-- change this to whitelist certain users who can READ values
+	self.userCanRead = {
+		'*', -- allow everyone
 	}
 
 	self:RegisterEvents()
@@ -16,24 +22,28 @@ function EbxEditServer:RegisterEvents()
 	NetEvents:Subscribe('EbxEdit:GetValue', self, self.onGetValue)
 	NetEvents:Subscribe('EbxEdit:SetNumber', self, self.onSetNumber)
 	NetEvents:Subscribe('EbxEdit:SetString', self, self.onSetString)
-	NetEvents:Subscribe('EbxEdit:SetNil', self, self.onSetNil)
+	--NetEvents:Subscribe('EbxEdit:SetNil', self, self.onSetNil) -- not ready
 end
 
-function EbxEditServer:CheckUser(player)
-	for name=0, #self.allowedUsernames do
-		if (player ~= nil and player.name == self.allowedUsernames[name]) then
+function EbxEditServer:CheckUser(player, action)
+
+	local checkNames = self['userCan'..action]
+
+	for name=0, #checkNames do
+		if (player ~= nil and (player.name == checkNames[name] or checkNames[name] == '*')) then
 			return true
 		end
 	end
-    SharedUtils:Print("User tried to edit something: "..tostring(player.name))
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "**You are not authorized to make edits**"})
+    SharedUtils:Print("User tried to "..action.." something: "..tostring(player.name))
+	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "**You are not authorized to "..action.." values!**"})
 	return false
 end
 
 function EbxEditServer:onGetValue(player, args)
 
-	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*onGetValue* ["..ebxEditUtils:getModuleState().."]"})
-	SharedUtils:Print("*onGetValue* ["..ebxEditUtils:getModuleState().."]")
+	if (not self:CheckUser(player, 'Read')) then
+		return
+	end
 
 	if (#args < 2) then
 		NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
@@ -74,7 +84,6 @@ function EbxEditServer:onGetValue(player, args)
 	})
 end
 
-
 function EbxEditServer:onSetNumber(player, args)
 	self:serverSetValue(player, args, 'number')
 end
@@ -102,18 +111,19 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 
 	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {["Message"] = "*"..command.."* ["..ebxEditUtils:getModuleState().."]"})
 	SharedUtils:Print("*"..command.."* ["..ebxEditUtils:getModuleState().."]")
-	if (not self:CheckUser(player)) then
+
+	if (not self:CheckUser(player, 'Write')) then
 		return
 	end
 
-	if (#args < 3) then
+	if ((valueType == 'nil' and #args < 2) or (valueType ~= 'nil' and #args < 3)) then
 		if (valueType == 'nil') then
 			NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
 				["Message"] = "Usage: `"..command.."` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**>"
 			})
 		else
 			NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
-				["Message"] = "Usage: `"..command.."` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**number**>"
+				["Message"] = "Usage: `"..command.."` <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**"..valueType.."**>"
 			})
 		end
 		return
@@ -140,7 +150,7 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 
 		local argValue = args[3]
 
-		-- if string, grab extra arguments and reconstitute
+		-- if string, grab any extra arguments and reconstitute
 		if (valueType == 'string') then
 			argValue = ''
 			for i=3, #args do
@@ -170,7 +180,16 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 		return
 	end
 
-	workingInstance[propertyName] = tonumber(newValue)
+	-- all that work so we can do this and actually WRITE the value
+	if (valueType == 'number') then
+		workingInstance[propertyName] = tonumber(newValue)
+
+	elseif (valueType == 'string') then
+		workingInstance[propertyName] = newValue
+
+	elseif (valueType == 'nil') then
+		workingInstance[propertyName] = nil
+	end
 
 	NetEvents:SendToLocal('EbxEdit:ServerMessage', player, {
 		["Message"] = "*Success*: "..tostring(propertyName)..' | '..tostring(workingInstance[propertyName])
