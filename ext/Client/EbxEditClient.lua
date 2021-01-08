@@ -10,6 +10,7 @@ function EbxEditClient:RegisterConsoleCommands()
     Console:Register('GetValue', '<*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> Returns the value at the given resource and path', self, self.onRequestGetValue)
     Console:Register('SetNumber', '<*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**number**> Set a numerical value on the given resource', self, self.onRequestSetNumber)
     Console:Register('SetString', '<*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**string**> Set a string value on the given resource', self, self.onRequestSetString)
+    Console:Register('SetBool', '<*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**boolean**> Set a boolean value on the given resource', self, self.onRequestSetString)
     Console:Register('SetNil', '<*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> Set a value on the given resource to `nil`', self, self.onRequestSetNil)
 end
 
@@ -28,6 +29,10 @@ end
 
 function EbxEditClient:onRequestSetString(args)
 	NetEvents:SendLocal('EbxEdit:SetString', args)
+end
+
+function EbxEditClient:onRequestSetBool(args)
+	NetEvents:SendLocal('EbxEdit:SetBool', args)
 end
 
 function EbxEditClient:onRequestSetNil(args)
@@ -55,6 +60,9 @@ function EbxEditClient:onClientSetValue(args)
 
 	elseif (args.Type == 'string') then
 		workingInstance[propertyName] = args.Value
+
+	elseif (valueType == 'boolean') then
+		workingInstance[propertyName] = (args.Value == 'true')
 
 	elseif (args.Type == 'nil') then
 		workingInstance[propertyName] = nil

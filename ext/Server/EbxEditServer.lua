@@ -22,6 +22,7 @@ function EbxEditServer:RegisterEvents()
 	NetEvents:Subscribe('EbxEdit:GetValue', self, self.onGetValue)
 	NetEvents:Subscribe('EbxEdit:SetNumber', self, self.onSetNumber)
 	NetEvents:Subscribe('EbxEdit:SetString', self, self.onSetString)
+	NetEvents:Subscribe('EbxEdit:SetBool', self, self.onSetBool)
 	--NetEvents:Subscribe('EbxEdit:SetNil', self, self.onSetNil) -- not ready
 end
 
@@ -92,6 +93,10 @@ function EbxEditServer:onSetString(player, args)
 	self:serverSetValue(player, args, 'string')
 end
 
+function EbxEditServer:onSetBool(player, args)
+	self:serverSetValue(player, args, 'boolean')
+end
+
 function EbxEditServer:onSetNil(player, args)
 	self:serverSetValue(player, args, 'nil')
 end
@@ -104,6 +109,9 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 
 	elseif (valueType == 'string') then
 		command = 'vu-ebxedit.SetString'
+
+	elseif (valueType == 'boolean') then
+		command = 'vu-ebxedit.SetBool'
 
 	elseif (valueType == 'nil') then
 		command = 'vu-ebxedit.SetNil'
@@ -186,6 +194,9 @@ function EbxEditServer:serverSetValue(player, args, valueType)
 
 	elseif (valueType == 'string') then
 		workingInstance[propertyName] = newValue
+
+	elseif (valueType == 'boolean') then
+		workingInstance[propertyName] = (newValue == 'true')
 
 	elseif (valueType == 'nil') then
 		workingInstance[propertyName] = nil
