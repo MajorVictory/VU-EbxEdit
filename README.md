@@ -6,6 +6,9 @@ A mod for Battlefield 3: Venice Unleashed which adds consoles commands to allow 
 - vu-ebxedit.SetNumber <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**number**>
 - vu-ebxedit.SetString <*ResourcePathOrGUID*|**String**> <*PropertyNamePath*|**string**> <*NewValue*|**string**>
 
+## Setup
+Read value permissions are by default enabled for everyone. To enable write values permissions for specific users, change the `userCanWrite` array in `EbxEdit\ext\Server\EbxEditServer.lua`. 
+
 ## Usage
 While running the game you can type these command into the console to edit any ebx value directly.
 
