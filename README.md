@@ -34,40 +34,28 @@ You can even do complex paths through arrays as long as you know which index to 
 This example changes the mp443's gun master weapon magazine modifier
 > vu-ebxedit.SetNumber Weapons/MP443/MP443_GM object.WeaponModifierData.2.Modifiers.2.MagazineCapacity 25
 
-## Cross-Mod Support
+## Useful Library
 You can import the `EbxEditUtils` class into your mod to make retreiving resources easier
 
-Add this class to the `ext/shared` folder and name it `ModUtils.lua`. Don't forget to then `require` the file in your scripts.
+Add the `EbxEditUtils.lua` file to your `ext/shared` folder and don't forget to then `require` the file in your scripts.
 ```lua
-class "ModUtils"
-function ModUtils:__init()
-	NetEvents:Subscribe('ModUtils:SendClass', function(classInfo)
-		_G[classInfo.className] = classInfo.classData
-	end)
-
-	if (SharedUtils:IsClientModule()) then
-		NetEvents:Send('ModUtils:GetClasses')
-	elseif (SharedUtils:IsServerModule()) then
-		NetEvents:Broadcast('ModUtils:GetClasses')
-	end
-end
-modUtils = ModUtils()
+ebxEditUtils = require('__shared/EbxEditUtils')
 ```
-You now have access to the `EbxEditUtils` class in the global namespace of your mod.
+You now have access to the `ebxEditUtils` class in the global namespace of your mod.
 
 
 Usage:
 ```lua
 -- let's grab the mp443 SoldierWeaponBlueprint
-local weaponMP443 = EbxEditUtils:GetWritableInstance('Weapons/MP443/MP443')
+local weaponMP443 = ebxEditUtils:GetWritableInstance('Weapons/MP443/MP443')
 
 -- let's drill down into the firing function and change the MagazineCapacity
 
 -- first lets verify our path format and split it up into an array of parts
-local propPath = EbxEditUtils:GetValidPath('Object.WeaponFiring.PrimaryFire.FireLogic.Ammo.MagazineCapacity')
+local propPath = ebxEditUtils:GetValidPath('Object.WeaponFiring.PrimaryFire.FireLogic.Ammo.MagazineCapacity')
 
 -- now lets search for our data property
-local ammoConfigData, property, isValid = EbxEditUtils:GetWritableProperty(weaponMP443, propPath)
+local ammoConfigData, property, isValid = ebxEditUtils:GetWritableProperty(weaponMP443, propPath)
 
 if (not isValid) then -- something went wrong, either the instance isn't loaded, or the path name is incorrect
 	return
@@ -85,11 +73,11 @@ ammoConfigData.AutoReplenishDelay = 4
 ### Useful Methods
 
 #### `EbxEditUtils:GetWritableInstance(resourcePathOrGUID)`
-This method returns a writable instance and precasts it to the correct type. `resourcePathOrGUID` can either be a path such as `Weapon/MP443/MP443` or a single instance Guid such as `B41C9F21-D723-4607-B2BA-4B2C30677C51`
+This method returns a writable instance and precasts it to the correct type. `resourcePathOrGUID` can either be a path such as `Weapons/MP443/MP443` or a single instance Guid such as `B41C9F21-D723-4607-B2BA-4B2C30677C51`
 
 Usage:
 ```lua
-local fireData = EbxEditUtils:GetWritableInstance('53489D8D-BE0B-4180-9F96-F1B728EFD898')
+local fireData = ebxEditUtils:GetWritableInstance('53489D8D-BE0B-4180-9F96-F1B728EFD898')
 fireData.shot.initialSpeed.z = 450
 fireData.fireLogic.rateOfFire = 900
 fireData.ammo.magazineCapacity = 420

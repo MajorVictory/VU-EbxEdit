@@ -9,15 +9,6 @@ function EbxEditUtils:__init()
 		"repeat", "return", "then", "true", "until", "while"
 	}
 
-	NetEvents:Subscribe('ModUtils:GetClasses', self, self.onGetClass)
-end
-
-function EbxEditUtils:onGetClass(args)
-	if (SharedUtils:IsClientModule()) then
-		NetEvents:Send('ModUtils:SendClass', {className = 'EbxEditUtils', classData = self})
-	elseif (SharedUtils:IsServerModule()) then
-		NetEvents:Broadcast('ModUtils:SendClass', {className = 'EbxEditUtils', classData = self})
-	end
 end
 
 -- returns two values <value>,<status>
