@@ -33,3 +33,78 @@ Method 2 uses the resource's GUID and the relative path to the value
 You can even do complex paths through arrays as long as you know which index to use
 This example changes the mp443's gun master weapon magazine modifier
 > vu-ebxedit.SetNumber Weapons/MP443/MP443_GM object.WeaponModifierData.2.Modifiers.2.MagazineCapacity 25
+
+## Cross-Mod Support
+You can import the `EbxEditUtils` class into your mod to make retreiving resources easier
+
+Add this class to the `ext/shared` folder and name it `ModUtils.lua`. Don't forget to then `require` the file in your scripts.
+```lua
+class "ModUtils"
+function ModUtils:__init()
+	NetEvents:Subscribe('ModUtils:SendClass', function(classInfo)
+		_G[classInfo.className] = classInfo.classData
+	end)
+
+	if (SharedUtils:IsClientModule()) then
+		NetEvents:Send('ModUtils:GetClasses')
+	elseif (SharedUtils:IsServerModule()) then
+		NetEvents:Broadcast('ModUtils:GetClasses')
+	end
+end
+modUtils = ModUtils()
+```
+You now have access to the `EbxEditUtils` class in the global namespace of your mod.
+
+
+Usage:
+```lua
+-- let's grab the mp443 SoldierWeaponBlueprint
+local weaponMP443 = EbxEditUtils:GetWritableInstance('Weapons/MP443/MP443')
+
+-- let's drill down into the firing function and change the MagazineCapacity
+
+-- first lets verify our path format and split it up into an array of parts
+local propPath = EbxEditUtils:GetValidPath('Object.WeaponFiring.PrimaryFire.FireLogic.Ammo.MagazineCapacity')
+
+-- now lets search for our data property
+local ammoConfigData, property, isValid = EbxEditUtils:GetWritableProperty(weaponMP443, propPath)
+
+if (not isValid) then -- something went wrong, either the instance isn't loaded, or the path name is incorrect
+	return
+end
+
+-- now we can set our value
+ammoConfigData[property] = 300
+
+-- `ammoConfigData` now represents `Object.WeaponFiring.PrimaryFire.FireLogic.Ammo` so you can edit more properties
+ammoConfigData.NumberOfMagazines = 5
+ammoConfigData.AutoReplenishMagazine = true
+ammoConfigData.AutoReplenishDelay = 4
+```
+
+### Useful Methods
+
+#### `EbxEditUtils:GetWritableInstance(resourcePathOrGUID)`
+This method returns a writable instance and precasts it to the correct type. `resourcePathOrGUID` can either be a path such as `Weapon/MP443/MP443` or a single instance Guid such as `B41C9F21-D723-4607-B2BA-4B2C30677C51`
+
+Usage:
+```lua
+local fireData = EbxEditUtils:GetWritableInstance('53489D8D-BE0B-4180-9F96-F1B728EFD898')
+fireData.shot.initialSpeed.z = 450
+fireData.fireLogic.rateOfFire = 900
+fireData.ammo.magazineCapacity = 420
+fireData.ammo.numberOfMagazines = -1
+```
+
+#### `EbxEditUtils:GetWritableProperty(instance, propertyPath|table)`
+This method lets you take a higher level object and drill down to a specific value within that object. Normally this requires a lot of local variables and casting instances or a Guid closer to where you want to edit. Note that `propertyPath` is a table containing each of the path names in order.
+
+
+#### `EbxEditUtils:GetValidPath(propertyPath|string)` and `EbxEditUtils:FormatMemberName(memberName|string)`
+The `GetValidPath` method takes a string path to a property and converts it into an array of property names. It will also automatically enforce proper casing using the `FormatMemberName` method if you are using the names from the EBX files directly.
+> 'MagazineCapacity' becomes 'magazineCapacity'
+> 'AmmoPickupMaxAmount' becomes 'ammoPickupMaxAmount'
+
+It does *NOT*, however, perfectly enforce the naming scheme, **it will not fix casing errors after the first character**
+> 'MagazineCaPacity' becomes 'magazineCaPacity'
+> 'AmmoPickupmaxAmount' becomes 'ammoPickupmaxAmount'

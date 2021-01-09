@@ -24,6 +24,14 @@ function EbxEditServer:RegisterEvents()
 	NetEvents:Subscribe('EbxEdit:SetString', self, self.onSetString)
 	NetEvents:Subscribe('EbxEdit:SetBool', self, self.onSetBool)
 	--NetEvents:Subscribe('EbxEdit:SetNil', self, self.onSetNil) -- not ready
+
+	NetEvents:Subscribe('VersionChecker:ModInfoAsk', function(args)
+		NetEvents:Broadcast('VersionChecker:ModInfoReply', {
+			["Version"] = '1.0',
+			["Manifest"] = 'https://raw.githubusercontent.com/MajorVictory/VU-EbxEdit/master/mod.json',
+			["Download"] = 'https://github.com/MajorVictory/VU-EbxEdit/releases/download/V1.0/VU-EbxEdit.zip'
+		})
+	end)
 end
 
 function EbxEditServer:CheckUser(player, action)
