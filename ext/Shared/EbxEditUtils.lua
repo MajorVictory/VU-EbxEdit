@@ -14,28 +14,66 @@ end
 -- returns two values <value>,<status>
 -- <value>: the found instance as a typed object and made writable
 -- <status>: boolean true if valid, string with message if failed
-function EbxEditUtils:GetWritableInstance(resourcePathOrGUID)
+function EbxEditUtils:GetWritableInstance(resourcePathOrGUIDOrContainer)
 
-	local instance = ResourceManager:SearchForDataContainer(resourcePathOrGUID)
+	if (type(resourcePathOrGUIDOrContainer) == 'userdata' and resourcePathOrGUIDOrContainer.typeInfo ~= nil) then
+		local returnInstance = _G[resourcePathOrGUIDOrContainer.typeInfo.name](resourcePathOrGUIDOrContainer)
+		if (returnInstance.MakeWritable ~= nil) then
+			returnInstance:MakeWritable()
+		end
+		return returnInstance, true
+	end
+
+	local instance = ResourceManager:SearchForDataContainer(resourcePathOrGUIDOrContainer)
 
 	if (instance == nil) then
-		instance = ResourceManager:SearchForInstanceByGuid(Guid(resourcePathOrGUID))
+		instance = ResourceManager:SearchForInstanceByGuid(Guid(resourcePathOrGUIDOrContainer))
 	end
 	if (instance == nil) then
-		instance = ResourceManager:FindDatabasePartition(Guid(resourcePathOrGUID))
+		instance = ResourceManager:FindDatabasePartition(Guid(resourcePathOrGUIDOrContainer))
 	end
 
 	if (instance == nil) then
 		return nil, 'Could not find Data Container, Instance, or Partition'
 	end
 
-	local instanceType = instance.typeInfo.name
-
-	local returnInstance = _G[instanceType](instance)
-	if (returnInstance.MakeWritable ~= nil) then
-		returnInstance:MakeWritable()
+	local workingInstance = _G[instance.typeInfo.name](instance)
+	if (workingInstance.MakeWritable ~= nil) then
+		workingInstance:MakeWritable()
 	end
-	return returnInstance, true
+	return workingInstance, true
+end
+
+-- returns three values <workingInstance>,<valid>
+-- <workingInstance>: the found instance as a typed object and made writable
+-- <valid>: the given values were valid
+function EbxEditUtils:GetWritableContainer(instance, containerPath)
+	local propertyName
+	local workingInstance = self:GetWritableInstance(instance)
+	local workingPath = self:GetValidPath(containerPath)
+
+	for i=1, #workingPath do
+
+		workingInstance, propertyName, valid = self:CheckInstancePropertyExists(workingInstance, workingPath[i])
+
+		if (not valid) then
+			return workingInstance, valid
+		else 
+			workingInstance = workingInstance[propertyName]
+			if (i == #workingPath) then
+
+				-- safety cast
+				workingInstance = _G[workingInstance.typeInfo.name](workingInstance)
+
+				if (workingInstance.MakeWritable ~= nil) then
+					workingInstance:MakeWritable()
+				end
+
+				return workingInstance, true
+			end
+		end
+	end
+	return workingInstance, false
 end
 
 -- returns three values <workingInstance>,<propertyName>,<valid>
@@ -44,10 +82,12 @@ end
 -- <valid>: the given values were valid
 function EbxEditUtils:GetWritableProperty(instance, propertyPath)
 	local propertyName
-	local workingInstance = instance
-	for i=1, #propertyPath do
+	local workingInstance = self:GetWritableInstance(instance)
+	local workingPath = self:GetValidPath(propertyPath)
 
-		workingInstance, propertyName, valid = self:CheckInstancePropertyExists(workingInstance, propertyPath[i])
+	for i=1, #workingPath do
+
+		workingInstance, propertyName, valid = self:CheckInstancePropertyExists(workingInstance, workingPath[i])
 		if (not valid) then
 			return workingInstance, propertyName, valid
 		else 
@@ -161,22 +201,14 @@ end
 
 function EbxEditUtils:GetValidPath(propertyPath)
 
-	local pathPieces = self:StringSplit(propertyPath, '\\.')
+	if (type(propertyPath) == 'string') then
+		propertyPath = self:StringSplit(propertyPath, '\\.')
+	end
+
 	local result = {}
 
-	for piece=1, #pathPieces do
-		result[#result+1] = self:FormatMemberName(pathPieces[piece])
-	end
-	return result
-end
-
-function EbxEditUtils:StringSplit(value, seperator)
-	if (seperator == nil) then
-		seperator = "%s"
-	end
-	local result = {}
-	for piece in string.gmatch(value, "([^"..seperator.."]+)") do
-		result[#result+1] = piece
+	for piece=1, #propertyPath do
+		result[#result+1] = self:FormatMemberName(propertyPath[piece])
 	end
 	return result
 end
@@ -219,6 +251,17 @@ function EbxEditUtils:FormatMemberName(memberName)
 	return outputName
 end
 
+function EbxEditUtils:StringSplit(value, seperator)
+	if (seperator == nil) then
+		seperator = "%s"
+	end
+	local result = {}
+	for piece in string.gmatch(value, "([^"..seperator.."]+)") do
+		result[#result+1] = piece
+	end
+	return result
+end
+
 function EbxEditUtils:StringIsLower(str)
 	return str:lower() == str
 end
@@ -239,10 +282,10 @@ function EbxEditUtils:getModuleState()
 end
 
 function EbxEditUtils:dump(o)
-	if(o == nil) then
+	if (o == nil) then
 		print("nil")
 	end
-	if type(o) == 'table' then
+	if (type(o) == 'table') then
 		local s = '{ '
 		for k,v in pairs(o) do
 			if type(k) ~= 'number' then k = '"'..k..'"' end

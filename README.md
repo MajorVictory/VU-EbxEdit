@@ -34,35 +34,29 @@ You can even do complex paths through arrays as long as you know which index to 
 This example changes the mp443's gun master weapon magazine modifier
 > vu-ebxedit.SetNumber Weapons/MP443/MP443_GM object.WeaponModifierData.2.Modifiers.2.MagazineCapacity 25
 
-## Useful Library
+## The Shared EbxEditUtils Library
 You can import the `EbxEditUtils` class into your mod to make retreiving resources easier
 
 Add the `EbxEditUtils.lua` file to your `ext/shared` folder and don't forget to then `require` the file in your scripts.
 ```lua
 ebxEditUtils = require('__shared/EbxEditUtils')
 ```
-You now have access to the `ebxEditUtils` class in the global namespace of your mod.
-
+You now have access to the class as `ebxEditUtils` in the global namespace of your mod.
 
 Usage:
 ```lua
 -- let's grab the mp443 SoldierWeaponBlueprint
 local weaponMP443 = ebxEditUtils:GetWritableInstance('Weapons/MP443/MP443')
 
--- let's drill down into the firing function and change the MagazineCapacity
-
--- first lets verify our path format and split it up into an array of parts
-local propPath = ebxEditUtils:GetValidPath('Object.WeaponFiring.PrimaryFire.FireLogic.Ammo.MagazineCapacity')
-
--- now lets search for our data property
-local ammoConfigData, property, isValid = ebxEditUtils:GetWritableProperty(weaponMP443, propPath)
-
-if (not isValid) then -- something went wrong, either the instance isn't loaded, or the path name is incorrect
-	return
+if (weaponMP443 == nil) then
+	return '"Weapons/MP443/MP443" ws not found or has not been loaded'
 end
 
+-- let's drill down into the firing function and change the MagazineCapacity
+local ammoConfigData = ebxEditUtils:GetWritableContainer(weaponMP443, 'Object.WeaponFiring.PrimaryFire.FireLogic.Ammo')
+
 -- now we can set our value
-ammoConfigData[property] = 300
+ammoConfigData.magazineCapacity = 300
 
 -- `ammoConfigData` now represents `Object.WeaponFiring.PrimaryFire.FireLogic.Ammo` so you can edit more properties
 ammoConfigData.NumberOfMagazines = 5
@@ -72,8 +66,8 @@ ammoConfigData.AutoReplenishDelay = 4
 
 ### Useful Methods
 
-#### `EbxEditUtils:GetWritableInstance(resourcePathOrGUID)`
-This method returns a writable instance and precasts it to the correct type. `resourcePathOrGUID` can either be a path such as `Weapons/MP443/MP443` or a single instance Guid such as `B41C9F21-D723-4607-B2BA-4B2C30677C51`
+#### `EbxEditUtils:GetWritableInstance(resourcePathOrGUIDOrContainer)`
+This method returns a writable instance and precasts it to the correct type. `resourcePathOrGUIDOrContainer` can be a path such as `Weapons/MP443/MP443`, a single instance Guid such as `B41C9F21-D723-4607-B2BA-4B2C30677C51`, or a pre-existing `DataContainer` instance
 
 Usage:
 ```lua
@@ -84,8 +78,38 @@ fireData.ammo.magazineCapacity = 420
 fireData.ammo.numberOfMagazines = -1
 ```
 
-#### `EbxEditUtils:GetWritableProperty(instance, propertyPath|table)`
-This method lets you take a higher level object and drill down to a specific value within that object. Normally this requires a lot of local variables and casting instances or a Guid closer to where you want to edit. Note that `propertyPath` is a table containing each of the path names in order.
+#### `EbxEditUtils:GetWritableContainer(instance, propertyPath|table/string)`
+This method lets you take a higher level object and drill down to a specific *container* within that object. Normally this requires a lot of local variables and casting instances or a Guid closer to where you want to edit. Note that `propertyPath` can be a table or a string. If you supply a table it must be the path names to follow in order. As a string, each path entry is seperated by the period (`.`) character.
+
+This method returns two values: `<workingInstance>`,`<valid>`
+- `<workingInstance>`: *object* \| the found instance as a typed object and made writable
+- `<valid>`: *boolean* \| the given path was valid
+Usage
+```lua
+local fireData = ebxEditUtils:GetWritableContainer(weaponMP443, 'Object.WeaponFiring.PrimaryFire')
+-- we now have the FiringFunctionData of the mp443
+fireData.shot.initialSpeed.z = 450
+fireData.fireLogic.rateOfFire = 900
+fireData.ammo.magazineCapacity = 420
+fireData.ammo.numberOfMagazines = -1
+```
+
+#### `EbxEditUtils:GetWritableProperty(instance, propertyPath|table/string)`
+This method lets you take a higher level object and drill down to a specific *property* within that object. Note that `propertyPath` can be a table or a string. If you supply a table it must be the path names to follow in order. As a string, each path entry is seperated by the period (`.`) character.
+
+This method returns three values: `<workingInstance>`,`<propertyName>`,`<valid>`
+- `<workingInstance>`: *object* \| the found instance as a typed object and made writable
+- `<propertyName>`: *string* \| the property name as a string
+- `<valid>`: *boolean* \| the given path was valid
+
+Usage
+```lua
+local fireData, primaryAmmo = ebxEditUtils:GetWritableProperty(weaponMP443, 'Object.WeaponFiring.PrimaryFire.UsePrimaryAmmo')
+-- we now have the FiringFunctionData of the mp443 and the specific property 'UsePrimaryAmmo'
+
+fireData[primaryAmmo] = false -- note the usage of an array index using the property
+
+```
 
 
 #### `EbxEditUtils:GetValidPath(propertyPath|string)` and `EbxEditUtils:FormatMemberName(memberName|string)`
