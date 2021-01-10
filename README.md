@@ -49,7 +49,7 @@ Usage:
 local weaponMP443 = ebxEditUtils:GetWritableInstance('Weapons/MP443/MP443')
 
 if (weaponMP443 == nil) then
-	return '"Weapons/MP443/MP443" ws not found or has not been loaded'
+	return '"Weapons/MP443/MP443" was not found or has not been loaded'
 end
 
 -- let's drill down into the firing function and change the MagazineCapacity
