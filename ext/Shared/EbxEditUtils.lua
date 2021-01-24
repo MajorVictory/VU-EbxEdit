@@ -148,7 +148,6 @@ end
 -- <value>: the validated value, with default applied if necessary
 -- <status>: boolean true if valid, string with message if failed
 function EbxEditUtils:ValidateValue(argValue, argParams)
-
 	local defaultValue = argParams.Default
 
 	if (argValue == nil and argParams.IsOptional) then
