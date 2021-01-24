@@ -48,9 +48,10 @@ end
 -- <workingInstance>: the found instance as a typed object and made writable
 -- <valid>: the given values were valid
 function EbxEditUtils:GetWritableContainer(instance, containerPath)
-	local propertyName
+	local propertyName = nil
 	local workingInstance = self:GetWritableInstance(instance)
 	local workingPath = self:GetValidPath(containerPath)
+	local valid = false
 
 	for i=1, #workingPath do
 
@@ -81,9 +82,10 @@ end
 -- <propertyName>: the property name that works
 -- <valid>: the given values were valid
 function EbxEditUtils:GetWritableProperty(instance, propertyPath)
-	local propertyName
+	local propertyName = nil
 	local workingInstance = self:GetWritableInstance(instance)
 	local workingPath = self:GetValidPath(propertyPath)
+	local valid = false
 
 	for i=1, #workingPath do
 
